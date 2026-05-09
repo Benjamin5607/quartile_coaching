@@ -16,7 +16,6 @@ export interface Task {
   createdAt: number;
   slaDeadline: number;
   completedAt?: number;
-  synced: boolean;
 }
 
 export class AppDB extends Dexie {
@@ -24,10 +23,10 @@ export class AppDB extends Dexie {
   tasks!: Table<Task>;
 
   constructor() {
-    super('coaching-sla-db');
+    super('sla-coaching-db');
     this.version(1).stores({
       quotas: 'id',
-      tasks: 'id, quotaId, email, status, slaDeadline, synced'
+      tasks: 'id, quotaId, email, status, slaDeadline'
     });
   }
 }
