@@ -1,11 +1,8 @@
-import { Quota } from '../db/dexie';
+import { Quota, Task } from '../db/dexie';
 
 export function cleanValue(val: unknown): string {
   if (val == null || val === '') return '';
-  return String(val)
-    .replace(/[\r\n\t]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(val).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 export interface CSVRow { [key: string]: string }
@@ -15,9 +12,10 @@ export function createTasksFromCSV(
   quotas: Quota[],
   selectedCols: string[],
   emailColName: string
-) {
-  const newTasks = [];
+): Task[] {
+  const newTasks: Task[] = [];
   const quotaMap = new Map<string, Quota>();
+  
   quotas.forEach(q => q.emails.forEach(e => quotaMap.set(e.toLowerCase(), q)));
 
   for (const row of rows) {
@@ -29,7 +27,7 @@ export function createTasksFromCSV(
 
     selectedCols.forEach(col => {
       const v = cleanValue(row[col]);
-      if (v) cleanedRaw[col] = v; // 빈 값은 털어내기
+      if (v) cleanedRaw[col] = v;
     });
 
     const now = Date.now();

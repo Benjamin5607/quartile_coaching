@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/components/CsvUploader.tsx","./src/components/Dashboard.tsx","./src/components/QuotaSetup.tsx","./src/db/dexie.ts","./src/utils/fileManager.ts","./src/utils/slaEngine.ts","./src/utils/transformer.ts"],"version":"6.0.3"}

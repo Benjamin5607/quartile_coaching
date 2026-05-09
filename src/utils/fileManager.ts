@@ -1,4 +1,5 @@
-import { db, Task, Quota } from '../db/dexie';
+import { db } from '../db/dexie';
+import type { Task, Quota } from '../db/dexie';
 import { cleanValue } from './transformer';
 
 export async function exportData() {
@@ -17,15 +18,15 @@ export async function exportData() {
 
 export async function importData(file: File, onRefresh: () => void) {
   const text = await file.text();
-  const data = JSON.parse(text);
+  const data = JSON.parse(text) as { version: string; quotas: Quota[]; tasks: Task[] };
   if (data.version !== '1.0') throw new Error('지원하지 않는 파일 버전입니다.');
 
-  const cleanQuotas: Quota[] = data.quotas.map((q: Quota) => ({
+  const cleanQuotas: Quota[] = data.quotas.map(q => ({
     ...q,
     emails: q.emails.map(e => cleanValue(e).toLowerCase()).filter(Boolean)
   }));
 
-  const importedTasks: Task[] = data.tasks.map((t: Task) => ({
+  const importedTasks: Task[] = data.tasks.map(t => ({
     ...t,
     email: cleanValue(t.email).toLowerCase(),
     rawData: Object.fromEntries(Object.entries(t.rawData).map(([k, v]) => [k, cleanValue(v)])),
@@ -33,18 +34,19 @@ export async function importData(file: File, onRefresh: () => void) {
   }));
 
   const existing = await db.tasks.toArray();
-  const existingMap = new Map(existing.map(t => [t.id, t]));
+  const existingMap = new Map<string, Task>(existing.map(t => [t.id, t]));
 
   const merged = importedTasks.map(imp => {
     const loc = existingMap.get(imp.id);
-    return (loc && loc.status === 'pending') ? loc : imp; // 기존 pending 유지
+    return (loc && loc.status === 'pending') ? loc : imp;
   });
 
   existing.forEach(loc => {
-    if (!importedTasks.some(imp => imp.id === loc.id)) merged.push(loc); // 로컬에 있던 것 복원
+    if (!importedTasks.some(imp => imp.id === loc.id)) merged.push(loc);
   });
 
-  await db.transaction('rw', db.quotas, db.tasks, async () => {
+  // Dexie transaction 타입 충돌 우회
+  await (db as any).transaction('rw', db.quotas, db.tasks, async () => {
     await db.quotas.clear();
     await db.quotas.bulkPut(cleanQuotas);
     await db.tasks.clear();

@@ -1,4 +1,5 @@
-import Dexie, { Table } from 'dexie';
+import Dexie from 'dexie';
+import type { Table } from 'dexie';
 
 export interface Quota {
   id: string;
@@ -19,14 +20,14 @@ export interface Task {
 }
 
 export class AppDB extends Dexie {
-  quotas!: Table<Quota>;
-  tasks!: Table<Task>;
+  quotas!: Table<Quota, string>;
+  tasks!: Table<Task, string>;
 
   constructor() {
     super('sla-coaching-db');
     this.version(1).stores({
-      quotas: 'id',
-      tasks: 'id, quotaId, email, status, slaDeadline'
+      quotas: 'id, name',
+      tasks: 'id, quotaId, email, status, slaDeadline, createdAt'
     });
   }
 }
