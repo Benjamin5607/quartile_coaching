@@ -19,3 +19,6 @@ node_modules/.cache/
 # gh-pages cache (submodule error fix)
 node_modules/.cache/
 .cache/
+
+# gh-pages cache
+node_modules/.cache/
