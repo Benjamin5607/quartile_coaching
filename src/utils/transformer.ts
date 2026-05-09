@@ -1,38 +1,47 @@
+import { Quota } from '../db/dexie';
+
 export function cleanValue(val: unknown): string {
   if (val == null || val === '') return '';
   return String(val)
-    .replace(/[\r\n\t]+/g, ' ')      // 개행/탭 → 공백
-    .replace(/\s+/g, ' ')            // 연속 공백 → 단일 공백
-    .replace(/[^\p{L}\p{N}@\.\-_ ]/gu, '') // 특수문자/이모지 제거 (선택사항)
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
-export function classifyTask(
-  row: Record<string, string>,
-  quotas: { id: string; emails: string[]; slaHours: number }[],
-  selectedCols: string[]
+export interface CSVRow { [key: string]: string }
+
+export function createTasksFromCSV(
+  rows: CSVRow[],
+  quotas: Quota[],
+  selectedCols: string[],
+  emailColName: string
 ) {
-  const email = cleanValue(row.email).toLowerCase();
-  if (!email) return null;
+  const newTasks = [];
+  const quotaMap = new Map<string, Quota>();
+  quotas.forEach(q => q.emails.forEach(e => quotaMap.set(e.toLowerCase(), q)));
 
-  const quota = quotas.find(q => q.emails.includes(email));
-  if (!quota) return null;
+  for (const row of rows) {
+    const email = cleanValue(row[emailColName]).toLowerCase();
+    if (!email || !quotaMap.has(email)) continue;
 
-  const cleanedRaw: Record<string, string> = {};
-  selectedCols.forEach(col => {
-    const v = cleanValue(row[col]);
-    if (v) cleanedRaw[col] = v; // 빈 값은 아예 제외
-  });
+    const quota = quotaMap.get(email)!;
+    const cleanedRaw: Record<string, string> = {};
 
-  const now = Date.now();
-  return {
-    id: crypto.randomUUID(),
-    quotaId: quota.id,
-    email,
-    rawData: cleanedRaw,
-    status: 'pending',
-    createdAt: now,
-    slaDeadline: now + quota.slaHours * 3600 * 1000,
-    synced: false
-  };
+    selectedCols.forEach(col => {
+      const v = cleanValue(row[col]);
+      if (v) cleanedRaw[col] = v; // 빈 값은 털어내기
+    });
+
+    const now = Date.now();
+    newTasks.push({
+      id: crypto.randomUUID(),
+      quotaId: quota.id,
+      email,
+      rawData: cleanedRaw,
+      status: 'pending',
+      createdAt: now,
+      slaDeadline: now + quota.slaHours * 3600 * 1000
+    });
+  }
+  return newTasks;
 }
