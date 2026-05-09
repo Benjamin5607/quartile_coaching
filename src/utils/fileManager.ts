@@ -1,8 +1,7 @@
 import { db, Task, Quota } from '../db/dexie';
 import { cleanValue } from './transformer';
 
-// ✅ 내보내기
-export async function exportSaveFile() {
+export async function exportData() {
   const quotas = await db.quotas.toArray();
   const tasks = await db.tasks.toArray();
   const payload = { version: '1.0', exportedAt: new Date().toISOString(), quotas, tasks };
@@ -16,8 +15,7 @@ export async function exportSaveFile() {
   URL.revokeObjectURL(url);
 }
 
-// ✅ 가져오기 (기존 pending 유지 + 병합)
-export async function importSaveFile(file: File) {
+export async function importData(file: File, onRefresh: () => void) {
   const text = await file.text();
   const data = JSON.parse(text);
   if (data.version !== '1.0') throw new Error('지원하지 않는 파일 버전입니다.');
@@ -30,26 +28,20 @@ export async function importSaveFile(file: File) {
   const importedTasks: Task[] = data.tasks.map((t: Task) => ({
     ...t,
     email: cleanValue(t.email).toLowerCase(),
-    rawData: Object.fromEntries(
-      Object.entries(t.rawData).map(([k, v]) => [k, cleanValue(v)])
-    ),
-    synced: false,
+    rawData: Object.fromEntries(Object.entries(t.rawData).map(([k, v]) => [k, cleanValue(v)])),
     slaDeadline: t.createdAt + (cleanQuotas.find(q => q.id === t.quotaId)?.slaHours || 24) * 3600 * 1000
   }));
 
-  // 🔄 병합: 기존 pending 태스크는 유지, 나머지는 업데이트/추가
   const existing = await db.tasks.toArray();
   const existingMap = new Map(existing.map(t => [t.id, t]));
 
   const merged = importedTasks.map(imp => {
     const loc = existingMap.get(imp.id);
-    if (loc && loc.status === 'pending') return loc; // 기존 pending 유지
-    return imp;
+    return (loc && loc.status === 'pending') ? loc : imp; // 기존 pending 유지
   });
 
-  // 가져오기 파일에 없지만 로컬에 있던 태스크 복원
   existing.forEach(loc => {
-    if (!importedTasks.some(imp => imp.id === loc.id)) merged.push(loc);
+    if (!importedTasks.some(imp => imp.id === loc.id)) merged.push(loc); // 로컬에 있던 것 복원
   });
 
   await db.transaction('rw', db.quotas, db.tasks, async () => {
@@ -59,5 +51,5 @@ export async function importSaveFile(file: File) {
     await db.tasks.bulkPut(merged);
   });
 
-  window.dispatchEvent(new CustomEvent('data-restored'));
+  onRefresh();
 }
