@@ -1,0 +1,14 @@
+coaching-sla-tool/
+├─ src/
+│  ├─ db/
+│  │  └─ dexie.ts          # IndexedDB 스키마
+│  ├─ utils/
+│  │  ├─ transformer.ts     # 데이터 털어내기(정제)
+│  │  ├─ fileManager.ts     # JSON 내보내기/가져오기(병합 로직)
+│  │  └─ sync.ts            # Vercel ↔ 로컬 동기화
+│  └─ main.tsx
+├─ pages/api/
+│  ├─ tasks.ts              # 작업 데이터 CRUD
+│  └─ cron/sla-check.ts     # Vercel Cron 기반 SLA 만료 처리
+├─ package.json
+└─ vercel.json               # Cron 설정
