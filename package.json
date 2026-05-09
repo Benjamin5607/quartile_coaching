@@ -4,7 +4,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist --no-verify"
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2",

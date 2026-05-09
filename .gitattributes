@@ -1,0 +1,4 @@
+# gh-pages 캐시 디렉터리 무시 (GitHub Actions 서브모듈 에러 해결)
+node_modules/.cache/gh-pages/** export-ignore
+node_modules/.cache/gh-pages/** -diff
+node_modules/.cache/gh-pages/** -merge

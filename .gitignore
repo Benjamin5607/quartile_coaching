@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Cache (gh-pages 문제 해결 핵심)
+.cache/
+node_modules/.cache/
+
+# OS/Editor
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Environment
+.env*.local
